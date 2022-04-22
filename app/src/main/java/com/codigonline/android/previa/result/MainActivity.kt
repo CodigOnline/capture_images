@@ -1,24 +1,16 @@
 package com.codigonline.android.previa.result
 
-import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.codigonline.android.previa.result.databinding.ActivityMainBinding
 import java.io.File
-import java.io.IOException
-import java.io.OutputStream
-import java.text.SimpleDateFormat
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -30,20 +22,36 @@ class MainActivity : AppCompatActivity() {
 
         binding.openCamera.setOnClickListener {
 
-            openCamera.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).also{
+                it.resolveActivity(packageManager).also{ component->
+                    createPhotoFile()
+                    val photoUri: Uri =
+                        FileProvider.getUriForFile(
+                            this,
+                            BuildConfig.APPLICATION_ID+".fileprovider",file)
+                    it.putExtra(MediaStore.EXTRA_OUTPUT,photoUri)
+                }
+            }
+            openCamera.launch(intent)
+            //openCamera.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
         }
 
     }
+
     val openCamera =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
-                val data = result.data!!
-                val bitmap = data.extras!!.get("data") as Bitmap
+                // val data = result.data!!
+                // val bitmap = data.extras!!.get("data") as Bitmap
+                val bitmap = BitmapFactory.decodeFile(file.toString())
                 binding.img.setImageBitmap(bitmap)
 
             }
         }
 
-
-
+    private lateinit var file:File
+    private fun createPhotoFile() {
+        val dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!
+        file = File.createTempFile("IMG_${System.currentTimeMillis()}_",".jpg",dir)
+    }
 }
